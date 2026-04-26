@@ -212,17 +212,84 @@ async function handleBotTurn(roomId, userMessage) {
 // Обработка подключений сокетов.
 io.on("connection", (socket) => {
 
-  // Клиент ищет матч.
-  socket.on("find_match", () => {
-    if (waitingPlayer && waitingPlayer.id !== socket.id) {
-      const roomId = createRoomId();
-      const firstPlayer = waitingPlayer;
-      const secondPlayer = socket;
+// Клиент ищет матч.
+socket.on("find_match", () => {
+  // Если кто-то уже ждет, создаем комнату для пары живых игроков
+  if (waitingPlayer && waitingPlayer.id !== socket.id) {
+    const roomId = createRoomId();
+    const firstPlayer = waitingPlayer;
+    const secondPlayer = socket;
 
-      firstPlayer.join(roomId);
-      secondPlayer.join(roomId);
-      socketToRoom.set(firstPlayer.id, roomId);
-      socketToRoom.set(secondPlayer.id, roomId);
+    firstPlayer.join(roomId);
+    secondPlayer.join(roomId);
+    socketToRoom.set(firstPlayer.id, roomId);
+    socketToRoom.set(secondPlayer.id, roomId);
+
+    // Сбрасываем таймер очереди у первого игрока
+    if (firstPlayer._queueTimer) {
+      clearTimeout(firstPlayer._queueTimer);
+      firstPlayer._queueTimer = null;
+    }
+
+    const isBotGame = false; // Два живых игрока
+    const randomFirstTurnPlayerId = Math.random() < 0.5 ? firstPlayer.id : secondPlayer.id;
+
+    rooms.set(roomId, {
+      players: [firstPlayer.id, secondPlayer.id],
+      remainingTime: 120,
+      intervalId: null,
+      isTimeUp: false,
+      votes: {},
+      turn: randomFirstTurnPlayerId,
+      isBotGame: isBotGame,
+      botPlayerId: null,
+      chatHistory: [],
+    });
+
+    waitingPlayer = null;
+
+    io.to(roomId).emit("match_found", { roomId });
+    emitTurnState(roomId);
+    console.log(`Комната ${roomId} создана (PvP)`);
+    startRoomTimer(roomId);
+    return;
+  }
+
+  // Если очередь пуста — ставим игрока в очередь и запускаем таймер на бота
+  waitingPlayer = socket;
+  socket.emit("waiting_for_opponent");
+
+  // Таймер: если через 8 секунд никто не подключился — даём бота
+  socket._queueTimer = setTimeout(() => {
+    // Проверяем, что игрок всё ещё в очереди
+    if (waitingPlayer && waitingPlayer.id === socket.id) {
+      waitingPlayer = null;
+
+      const roomId = createRoomId();
+      const botId = `bot_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+
+      socket.join(roomId);
+      socketToRoom.set(socket.id, roomId);
+
+      rooms.set(roomId, {
+        players: [socket.id, botId],
+        remainingTime: 120,
+        intervalId: null,
+        isTimeUp: false,
+        votes: {},
+        turn: socket.id,
+        isBotGame: true,
+        botPlayerId: botId,
+        chatHistory: [],
+      });
+
+      io.to(roomId).emit("match_found", { roomId });
+      emitTurnState(roomId);
+      console.log(`Комната ${roomId} создана с ботом ${botId} (после ожидания)`);
+      startRoomTimer(roomId);
+    }
+  }, 8000); // 8 секунд ожидания
+});
 
       // Решаем, будет ли бот
       const isBotGame = BOTS_ENABLED && Math.random() < BOT_CHANCE;
