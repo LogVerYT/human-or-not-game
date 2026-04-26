@@ -60,7 +60,7 @@ if (!groq) {
   );
 }
 // Вероятность того, что один из игроков окажется ботом (0.5 = 50%)
-const BOT_CHANCE = 1.0;
+const BOT_CHANCE = 0.5;
 
 // Подключаем Socket.io к HTTP-серверу Fastify с открытым CORS.
 const io = new Server(fastify.server, {
