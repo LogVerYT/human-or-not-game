@@ -291,68 +291,6 @@ socket.on("find_match", () => {
   }, 8000); // 8 секунд ожидания
 });
 
-      // Решаем, будет ли бот
-      const isBotGame = BOTS_ENABLED && Math.random() < BOT_CHANCE;
-
-      const randomFirstTurnPlayerId = Math.random() < 0.5 ? firstPlayer.id : secondPlayer.id;
-
-      rooms.set(roomId, {
-        players: [firstPlayer.id, secondPlayer.id],
-        remainingTime: 120,
-        intervalId: null,
-        isTimeUp: false,
-        votes: {},
-        turn: randomFirstTurnPlayerId,
-        isBotGame: isBotGame,
-        botPlayerId: isBotGame ? (Math.random() < 0.5 ? firstPlayer.id : secondPlayer.id) : null,
-        chatHistory: [], // История сообщений для бота
-      });
-
-      waitingPlayer = null;
-
-      io.to(roomId).emit("match_found", { roomId });
-      const roomState = rooms.get(roomId);
-      // Если это игра с ботом, даём настоящему игроку первый ход.
-      if (isBotGame && roomState && roomState.botPlayerId) {
-        const humanPlayerId = roomState.players.find((id) => id !== roomState.botPlayerId);
-        roomState.turn = humanPlayerId;
-      }
-      emitTurnState(roomId);
-
-      console.log(`Комната ${roomId} создана, isBotGame: ${isBotGame}`);
-      startRoomTimer(roomId);
-      return;
-    }
-
-    // Если очередь пуста и боты включены — сразу создаём игру с ботом
-    if (BOTS_ENABLED) {
-      const roomId = createRoomId();
-      const botId = `bot_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-
-      socket.join(roomId);
-      socketToRoom.set(socket.id, roomId);
-
-      rooms.set(roomId, {
-        players: [socket.id, botId],
-        remainingTime: 120,
-        intervalId: null,
-        isTimeUp: false,
-        votes: {},
-        turn: socket.id, // Игрок ходит первым
-        isBotGame: true,
-        botPlayerId: botId,
-        chatHistory: [],
-      });
-
-      io.to(roomId).emit("match_found", { roomId });
-      emitTurnState(roomId);
-      console.log(`Комната ${roomId} создана с ботом ${botId}`);
-      startRoomTimer(roomId);
-    } else {
-      // Если боты выключены — ставим в очередь как раньше
-      waitingPlayer = socket;
-      socket.emit("waiting_for_opponent");
-    }
   });
 
   // Принимаем сообщение и отправляем его в комнату.
