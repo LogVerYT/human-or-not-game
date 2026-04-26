@@ -5,6 +5,7 @@
   - В `server/server.js` порт переведён на `process.env.PORT || 3000`, хост задан `0.0.0.0`.
   - В `server/server.js` ключ Groq убран из кода и берётся из `process.env.GROQ_API_KEY`.
   - В корень добавлен `.gitignore` с игнором `node_modules`.
+  - Исправлено зависание голосования в матчах с ботом: теперь при `isBotGame` результат отправляется сразу проголосовавшему игроку.
 
 - Создана папка `server`.
 - Добавлен `server/package.json` с зависимостями `fastify` и `socket.io`.

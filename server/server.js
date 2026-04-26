@@ -360,6 +360,26 @@ io.on("connection", (socket) => {
     if (!roomState.players.includes(socket.id)) return;
 
     roomState.votes[socket.id] = vote;
+
+    // Если игра с ботом — завершаем голосование сразу, не ожидая второго голоса.
+    // В PvP-режиме (2 живых игрока) ниже остаётся прежняя логика ожидания обоих голосов.
+    if (roomState.isBotGame) {
+      const humanSocket = io.sockets.sockets.get(socket.id);
+      if (humanSocket) {
+        humanSocket.emit("vote_result", {
+          yourVote: vote,
+          correctAnswer: "bot",
+          isCorrect: vote === "bot",
+          opponentVote: "none",
+        });
+      }
+
+      if (roomState.intervalId) clearInterval(roomState.intervalId);
+      rooms.delete(roomId);
+      socketToRoom.delete(socket.id);
+      return;
+    }
+
     const [firstPlayerId, secondPlayerId] = roomState.players;
     const firstVote = roomState.votes[firstPlayerId];
     const secondVote = roomState.votes[secondPlayerId];
