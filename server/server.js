@@ -291,8 +291,6 @@ socket.on("find_match", () => {
   }, 8000); // 8 секунд ожидания
 });
 
-  });
-
   // Принимаем сообщение и отправляем его в комнату.
   socket.on("send_msg", ({ roomId, text }) => {
     if (!roomId || typeof text !== "string" || !text.trim()) return;
@@ -470,7 +468,6 @@ socket.on("find_match", () => {
     rooms.delete(roomId);
     socketToRoom.delete(socket.id);
   });
-});
 
 // Health-check маршрут.
 // fastify.get("/", async () => ({ status: "ok" }));
@@ -479,6 +476,7 @@ socket.on("find_match", () => {
 const start = async () => {
   try {
     const port = process.env.PORT ? Number(process.env.PORT) : 3000;
+
     await fastify.listen({ port, host: "0.0.0.0" });
   } catch (error) {
     fastify.log.error(error);
