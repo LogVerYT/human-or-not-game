@@ -1,5 +1,5 @@
 // Подключаемся к локальному серверу Socket.io.
-const socket = io("http://10.163.249.9:3000");
+const socket = io();
 
 // Получаем ссылки на элементы интерфейса.
 const startScreen = document.getElementById("start-screen");
